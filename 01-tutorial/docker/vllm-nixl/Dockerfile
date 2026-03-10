@@ -1,4 +1,4 @@
-FROM vllm/vllm-openai:nightly
+FROM vllm/vllm-openai:v0.17.0
 
 # NIXL
 RUN pip install nixl>=0.10.0
