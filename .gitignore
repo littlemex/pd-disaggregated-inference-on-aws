@@ -1,0 +1,15 @@
+node_modules/
+cdk.out/
+cdk.context.json
+__pycache__/
+.pytest_cache/
+.aws-sam/
+.venv/
+*.bak
+
+# Deployment configs with real values
+iac/ec2/setup/configs/my-deployment.env
+iac/ec2/setup/configs/tokyo-*.env
+
+# Deprecated
+iac/ec2/setup/tasks/*.json
