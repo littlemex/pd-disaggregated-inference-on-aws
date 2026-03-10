@@ -1,0 +1,22 @@
+{
+  "name": "pd-disaggregated-inference-ec2-cdk",
+  "version": "1.0.0",
+  "description": "CDK infrastructure for vLLM Disaggregated Inference on EC2",
+  "bin": {
+    "pd-di-ec2": "bin/app.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "cdk": "cdk"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "aws-cdk": "^2.140.0",
+    "typescript": "^5.3.0"
+  },
+  "dependencies": {
+    "aws-cdk-lib": "^2.140.0",
+    "constructs": "^10.3.0"
+  }
+}
