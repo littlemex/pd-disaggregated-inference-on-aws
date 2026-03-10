@@ -1,0 +1,24 @@
+version: '3.8'
+services:
+  vllm:
+    build: ../../docker/vllm-nixl
+    image: vllm-nixl:latest
+    environment:
+      - VLLM_ROLE=unified
+      - MODEL=Qwen/Qwen3-8B
+      - PORT=8000
+      - TP_SIZE=1
+    ports:
+      - "8000:8000"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['0']
+              capabilities: [gpu]
+    volumes:
+      - huggingface-cache:/root/.cache/huggingface
+
+volumes:
+  huggingface-cache:
