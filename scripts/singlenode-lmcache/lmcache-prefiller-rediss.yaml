@@ -1,0 +1,6 @@
+local_cpu: True
+max_local_cpu_size: 5
+remote_url: "rediss://ws-pd-di-kvcache-19mmes.serverless.usw2.cache.amazonaws.com:6379"
+remote_serde: "naive"
+chunk_size: 256
+save_unfull_chunk: True
