@@ -6,13 +6,12 @@
 #   - Multi GPU (g5.12xlarge, GPUS_PER_ROLE=2): Prefill + Decode を別 GPU で同居
 
 #SBATCH --job-name=disagg-rediss
-#SBATCH --partition=compute-gpu
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4
 #SBATCH --time=04:00:00
-#SBATCH --output=/fsx/logs/disagg-rediss-%j.out
-#SBATCH --error=/fsx/logs/disagg-rediss-%j.err
+#SBATCH --output=%x-%j.out
+#SBATCH --error=%x-%j.err
 #SBATCH --exclusive
 
 set -euo pipefail
@@ -26,6 +25,21 @@ BASE_IMAGE="${BASE_IMAGE:-vllm/vllm-openai:latest}"
 # GPU 数 >= 2*GPUS_PER_ROLE が必要。g5.xlarge なら 1, g5.12xlarge なら 2 を指定。
 GPUS_PER_ROLE="${GPUS_PER_ROLE:-1}"
 RUN_DECODE="${RUN_DECODE:-auto}"  # auto / true / false
+
+# Optional bind mounts: 未設定ならマウントを追加しない (旧動作を維持)
+#   DATASETS_DIR=/host/path  → container 内 /datasets にマウント
+#   RESULT_DIR=/host/path    → container 内 /results にマウント
+DATASETS_DIR="${DATASETS_DIR:-}"
+RESULT_DIR="${RESULT_DIR:-}"
+
+EXTRA_MOUNTS=()
+if [[ -n "${DATASETS_DIR}" ]]; then
+  EXTRA_MOUNTS+=(-v "${DATASETS_DIR}:/datasets")
+fi
+if [[ -n "${RESULT_DIR}" ]]; then
+  mkdir -p "${RESULT_DIR}"
+  EXTRA_MOUNTS+=(-v "${RESULT_DIR}:/results")
+fi
 
 echo "========================================"
 echo "Prefill-Decode Disaggregated Inference"
@@ -94,8 +108,8 @@ fi
 
 # 古いコンテナを停止・削除
 echo "[INFO] Stopping old containers..."
-docker stop vllm-prefill vllm-decode 2>/dev/null || true
-docker rm vllm-prefill vllm-decode 2>/dev/null || true
+docker stop vllm-standard vllm-prefill vllm-decode 2>/dev/null || true
+docker rm vllm-standard vllm-prefill vllm-decode 2>/dev/null || true
 
 # GPU 割当 (カンマ区切り ID) を生成
 prefill_gpu_ids=$(seq -s, 0 $(( GPUS_PER_ROLE - 1 )))
@@ -112,6 +126,7 @@ docker run -d \
   --network host \
   -v ${MODEL_PATH}:/model \
   -v ${CONFIG_DIR}:/configs \
+  ${EXTRA_MOUNTS[@]+"${EXTRA_MOUNTS[@]}"} \
   -e LMCACHE_CONFIG_FILE=/configs/lmcache-prefiller-rediss.yaml \
   -e VLLM_LOGGING_LEVEL=INFO \
   ${BASE_IMAGE} \
@@ -138,6 +153,7 @@ if [[ "${RUN_DECODE}" == "true" ]]; then
     --network host \
     -v ${MODEL_PATH}:/model \
     -v ${CONFIG_DIR}:/configs \
+    ${EXTRA_MOUNTS[@]+"${EXTRA_MOUNTS[@]}"} \
     -e LMCACHE_CONFIG_FILE=/configs/lmcache-decoder-rediss.yaml \
     -e VLLM_LOGGING_LEVEL=INFO \
     ${BASE_IMAGE} \
